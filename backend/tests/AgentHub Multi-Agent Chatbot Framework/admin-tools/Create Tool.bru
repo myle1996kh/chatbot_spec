@@ -1,0 +1,26 @@
+meta {
+  name: Create Tool
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/admin/tools
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "base_tool_id": "",
+    "name": "",
+    "description": "",
+    "config": {},
+    "input_schema": {},
+    "is_active": false
+  }
+}

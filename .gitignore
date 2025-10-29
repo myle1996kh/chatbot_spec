@@ -97,3 +97,6 @@ pnpm-debug.log*
 $RECYCLE.BIN/
 *.lnk
 
+# Special Windows files
+nul
+

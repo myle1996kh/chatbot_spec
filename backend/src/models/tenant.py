@@ -26,7 +26,7 @@ class Tenant(Base):
     )
 
     # Relationships
-    sessions = relationship("Session", back_populates="tenant")
+    sessions = relationship("ChatSession", back_populates="tenant")
     agent_permissions = relationship("TenantAgentPermission", back_populates="tenant")
     tool_permissions = relationship("TenantToolPermission", back_populates="tenant")
     llm_config = relationship("TenantLLMConfig", back_populates="tenant", uselist=False)

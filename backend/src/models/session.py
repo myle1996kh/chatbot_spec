@@ -8,8 +8,8 @@ import uuid
 from .base import Base
 
 
-class Session(Base):
-    """Session - conversation sessions for tracking multi-turn interactions."""
+class ChatSession(Base):
+    """ChatSession - conversation sessions for tracking multi-turn interactions."""
 
     __tablename__ = "sessions"
 
@@ -17,9 +17,10 @@ class Session(Base):
     tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.tenant_id"), nullable=False)
     user_id = Column(String(255), nullable=False)  # User identifier from JWT
     agent_id = Column(UUID(as_uuid=True), ForeignKey("agent_configs.agent_id"))
+    thread_id = Column(String(500))  # LangGraph thread ID
     created_at = Column(TIMESTAMP, nullable=False, default=datetime.utcnow)
     last_message_at = Column(TIMESTAMP, nullable=False, default=datetime.utcnow)
-    metadata = Column(JSONB)  # Additional session metadata
+    session_metadata = Column("metadata", JSONB)  # Additional session metadata (mapped to "metadata" column)
 
     # Relationships
     tenant = relationship("Tenant", back_populates="sessions")
@@ -27,4 +28,4 @@ class Session(Base):
     messages = relationship("Message", back_populates="session")
 
     def __repr__(self):
-        return f"<Session(session_id={self.session_id}, tenant_id={self.tenant_id}, user_id={self.user_id})>"
+        return f"<ChatSession(session_id={self.session_id}, tenant_id={self.tenant_id}, user_id={self.user_id})>"

@@ -1,0 +1,19 @@
+meta {
+  name: Get Tenant Permissions
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/admin/tenants/:tenant_id/permissions
+  body: none
+  auth: bearer
+}
+
+params:path {
+  tenant_id: 
+}
+
+auth:bearer {
+  token: {{token}}
+}

@@ -1,0 +1,21 @@
+meta {
+  name: List Tools
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/admin/tools
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~is_active: 
+  ~limit: 
+  ~offset: 
+}
+
+auth:bearer {
+  token: {{token}}
+}

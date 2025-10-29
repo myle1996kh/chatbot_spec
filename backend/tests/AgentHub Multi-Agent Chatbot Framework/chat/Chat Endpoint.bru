@@ -1,0 +1,26 @@
+meta {
+  name: Chat Endpoint
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/:tenant_id/chat
+  body: json
+  auth: bearer
+}
+
+params:path {
+  tenant_id: 
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "message": "",
+    "session_id": ""
+  }
+}

@@ -1,0 +1,27 @@
+meta {
+  name: List Sessions
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/:tenant_id/session
+  body: none
+  auth: bearer
+}
+
+params:query {
+  user_id: 
+  ~start_date: 
+  ~end_date: 
+  ~limit: 
+  ~offset: 
+}
+
+params:path {
+  tenant_id: 
+}
+
+auth:bearer {
+  token: {{token}}
+}

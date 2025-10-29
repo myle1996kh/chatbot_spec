@@ -1,0 +1,31 @@
+meta {
+  name: Update Agent
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/api/admin/agents/:agent_id
+  body: json
+  auth: bearer
+}
+
+params:path {
+  agent_id: 
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "",
+    "description": "",
+    "prompt_template": "",
+    "llm_model_id": "",
+    "tool_ids": "",
+    "is_active": "",
+    "metadata": ""
+  }
+}

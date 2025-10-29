@@ -1,0 +1,29 @@
+meta {
+  name: Update Tool
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/api/admin/tools/:tool_id
+  body: json
+  auth: bearer
+}
+
+params:path {
+  tool_id: 
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "",
+    "description": "",
+    "config": "",
+    "input_schema": "",
+    "is_active": ""
+  }
+}

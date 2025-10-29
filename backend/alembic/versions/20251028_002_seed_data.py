@@ -1,3 +1,5 @@
+
+
 """Seed data for base_tools, output_formats, and llm_models
 
 Revision ID: 002
@@ -85,16 +87,17 @@ def upgrade() -> None:
     )
 
     # Insert llm_models seed data
+    # Using OpenRouter as default provider
     op.execute(
         f"""
         INSERT INTO llm_models (
             llm_model_id, provider, model_name, context_window,
             cost_per_1k_input_tokens, cost_per_1k_output_tokens, is_active
         ) VALUES
-        ('{gpt4o_mini_id}', 'openai', 'gpt-4o-mini', 128000, 0.00015, 0.0006, true),
-        ('{gpt4o_id}', 'openai', 'gpt-4o', 128000, 0.0025, 0.01, true),
-        ('{gemini_id}', 'gemini', 'gemini-1.5-pro', 1048576, 0.00125, 0.00375, true),
-        ('{claude_id}', 'anthropic', 'claude-3-5-sonnet-20241022', 200000, 0.003, 0.015, true)
+        ('{gpt4o_mini_id}', 'openrouter', 'openai/gpt-4o-mini', 128000, 0.00015, 0.0006, true),
+        ('{gpt4o_id}', 'openrouter', 'openai/gpt-4o', 128000, 0.0025, 0.01, true),
+        ('{gemini_id}', 'openrouter', 'google/gemini-1.5-pro', 1048576, 0.00125, 0.00375, true),
+        ('{claude_id}', 'openrouter', 'anthropic/claude-3.5-sonnet', 200000, 0.003, 0.015, true)
         """
     )
 

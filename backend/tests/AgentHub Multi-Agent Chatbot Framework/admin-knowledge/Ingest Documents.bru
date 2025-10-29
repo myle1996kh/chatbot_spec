@@ -1,0 +1,26 @@
+meta {
+  name: Ingest Documents
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/admin/tenants/:tenant_id/knowledge
+  body: json
+  auth: bearer
+}
+
+params:path {
+  tenant_id: 
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "documents": [],
+    "metadatas": ""
+  }
+}

@@ -64,15 +64,24 @@ async def root():
     }
 
 
-# Import and include routers (will be added in Phase 3)
-# from src.api import chat, sessions
-# from src.api.admin import agents, tools, tenants, monitoring
-# app.include_router(chat.router, prefix="/api", tags=["chat"])
-# app.include_router(sessions.router, prefix="/api", tags=["sessions"])
-# app.include_router(agents.router, prefix="/api/admin", tags=["admin-agents"])
-# app.include_router(tools.router, prefix="/api/admin", tags=["admin-tools"])
-# app.include_router(tenants.router, prefix="/api/admin", tags=["admin-tenants"])
-# app.include_router(monitoring.router, prefix="/api/admin", tags=["admin-monitoring"])
+# Import and include routers
+from src.api import chat, sessions
+
+# Chat and session management endpoints (Phase 3)
+app.include_router(chat.router, tags=["chat"])
+app.include_router(sessions.router, tags=["sessions"])
+
+# Admin endpoints (Phase 4 & Phase 8)
+from src.api.admin import agents, tools, tenants, knowledge
+
+app.include_router(agents.router, tags=["admin-agents"])
+app.include_router(tools.router, tags=["admin-tools"])
+app.include_router(tenants.router, tags=["admin-tenants"])
+app.include_router(knowledge.router, tags=["admin-knowledge"])
+
+# Monitoring endpoints (will be added in Phase 11)
+# from src.api.admin import monitoring
+# app.include_router(monitoring.router, tags=["admin-monitoring"])
 
 
 if __name__ == "__main__":

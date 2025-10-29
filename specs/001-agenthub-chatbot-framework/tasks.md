@@ -102,7 +102,7 @@ backend/
 
 ### Core Agent Framework
 
-- [ ] T032 [US1] Implement LLMManager in backend/src/services/llm_manager.py (load tenant LLM config, decrypt API key, instantiate ChatOpenAI/ChatGoogleGenerativeAI/ChatAnthropic)
+- [ ] T032 [US1] Implement LLMManager in backend/src/services/llm_manager.py (load tenant LLM config, decrypt API key, instantiate ChatOpenAI/ChatGoogleGenerativeAI/ChatAnthropic/openrouter)
 - [ ] T033 [US1] Implement CacheService in backend/src/services/cache_service.py (Redis caching with tenant namespace pattern agenthub:{tenant_id}:cache:{key}, 1h TTL)
 
 ### Tool Framework

@@ -172,6 +172,7 @@ def upgrade() -> None:
         sa.Column('tenant_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('user_id', sa.String(255), nullable=False),
         sa.Column('agent_id', postgresql.UUID(as_uuid=True)),
+        sa.Column('thread_id', sa.String(500)),
         sa.Column('created_at', sa.TIMESTAMP, nullable=False, server_default=sa.func.now()),
         sa.Column('last_message_at', sa.TIMESTAMP, nullable=False, server_default=sa.func.now()),
         sa.Column('metadata', postgresql.JSONB),

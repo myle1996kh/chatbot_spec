@@ -1,0 +1,26 @@
+meta {
+  name: Update Tenant Permissions
+  type: http
+  seq: 2
+}
+
+patch {
+  url: {{baseUrl}}/api/admin/tenants/:tenant_id/permissions
+  body: json
+  auth: bearer
+}
+
+params:path {
+  tenant_id: 
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "agent_permissions": "",
+    "tool_permissions": ""
+  }
+}

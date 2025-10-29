@@ -31,7 +31,7 @@ from src.models.output_format import OutputFormat
 from src.models.tool import ToolConfig
 from src.models.agent import AgentConfig, AgentTools
 from src.models.permissions import TenantAgentPermission, TenantToolPermission
-from src.models.session import Session
+from src.models.session import ChatSession
 from src.models.message import Message
 
 # Import Base from models

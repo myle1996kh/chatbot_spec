@@ -1,0 +1,19 @@
+meta {
+  name: Get Agent
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/admin/agents/:agent_id
+  body: none
+  auth: bearer
+}
+
+params:path {
+  agent_id: 
+}
+
+auth:bearer {
+  token: {{token}}
+}

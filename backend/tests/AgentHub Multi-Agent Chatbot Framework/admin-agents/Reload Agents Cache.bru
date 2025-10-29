@@ -1,0 +1,19 @@
+meta {
+  name: Reload Agents Cache
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/admin/agents/reload
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~tenant_id: 
+}
+
+auth:bearer {
+  token: {{token}}
+}

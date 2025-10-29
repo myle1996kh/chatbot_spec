@@ -17,11 +17,11 @@ class Message(Base):
     session_id = Column(UUID(as_uuid=True), ForeignKey("sessions.session_id"), nullable=False)
     role = Column(String(50), nullable=False)  # user/assistant/system
     content = Column(Text, nullable=False)  # Message content
-    timestamp = Column(TIMESTAMP, nullable=False, default=datetime.utcnow)
-    metadata = Column(JSONB)  # Additional metadata (intent, tool_calls, tokens)
+    created_at = Column("timestamp", TIMESTAMP, nullable=False, default=datetime.utcnow)  # Mapped to "timestamp" column
+    message_metadata = Column("metadata", JSONB)  # Additional metadata (intent, tool_calls, tokens)
 
     # Relationships
-    session = relationship("Session", back_populates="messages")
+    session = relationship("ChatSession", back_populates="messages")
 
     def __repr__(self):
         return f"<Message(message_id={self.message_id}, session_id={self.session_id}, role={self.role})>"
