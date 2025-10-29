@@ -1,0 +1,444 @@
+openapi: 3.1.0
+info:
+  title: AgentHub Admin API
+  description: Administration endpoints for agent, tool, and tenant management
+  version: 1.0.0
+
+servers:
+  - url: https://api.agenthub.example.com
+  - url: http://localhost:8000
+
+security:
+  - BearerAuth: []
+
+paths:
+  /api/admin/agents:
+    get:
+      summary: List all agents
+      description: Retrieve list of agent configurations (User Story: US2)
+      operationId: listAgents
+      tags: [Admin - Agents]
+      responses:
+        '200':
+          description: List of agents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AgentConfig'
+
+    post:
+      summary: Create new agent
+      description: |
+        Create a new agent configuration (User Story: US2).
+        Validates Configuration Over Code principle.
+      operationId: createAgent
+      tags: [Admin - Agents]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAgentRequest'
+      responses:
+        '201':
+          description: Agent created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agent_id:
+                    type: string
+                    format: uuid
+
+  /api/admin/agents/{agent_id}:
+    get:
+      summary: Get agent details
+      operationId: getAgent
+      tags: [Admin - Agents]
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Agent details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentConfig'
+
+    patch:
+      summary: Update agent configuration
+      description: Update agent prompt, tools, or model (User Story: US2)
+      operationId: updateAgent
+      tags: [Admin - Agents]
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAgentRequest'
+      responses:
+        '200':
+          description: Agent updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /api/admin/agents/reload:
+    post:
+      summary: Reload agent cache
+      description: |
+        Force reload of agent configurations from database, bypassing cache TTL.
+        Useful after configuration changes (User Story: US2).
+      operationId: reloadAgentCache
+      tags: [Admin - Agents]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tenant_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                  description: Reload specific tenant (null = all tenants)
+      responses:
+        '200':
+          description: Cache reloaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reloaded_agents:
+                    type: array
+                    items:
+                      type: string
+
+  /api/admin/tools:
+    get:
+      summary: List all tools
+      operationId: listTools
+      tags: [Admin - Tools]
+      responses:
+        '200':
+          description: List of tools
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ToolConfig'
+
+    post:
+      summary: Create new tool
+      description: Create tool from base tool template (User Story: US5)
+      operationId: createTool
+      tags: [Admin - Tools]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateToolRequest'
+      responses:
+        '201':
+          description: Tool created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool_id:
+                    type: string
+                    format: uuid
+
+  /api/admin/tenants/{tenant_id}/permissions:
+    get:
+      summary: Get tenant permissions
+      description: Get agents and tools enabled for tenant (User Story: US2, US3)
+      operationId: getTenantPermissions
+      tags: [Admin - Tenants]
+      parameters:
+        - name: tenant_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tenant permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantPermissions'
+
+    patch:
+      summary: Update tenant permissions
+      description: |
+        Enable/disable agents and tools for tenant (User Story: US2, US3).
+        Enforces multi-tenant isolation.
+      operationId: updateTenantPermissions
+      tags: [Admin - Tenants]
+      parameters:
+        - name: tenant_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                agents:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      agent_id:
+                        type: string
+                        format: uuid
+                      enabled:
+                        type: boolean
+                tools:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      tool_id:
+                        type: string
+                        format: uuid
+                      enabled:
+                        type: boolean
+      responses:
+        '200':
+          description: Permissions updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /api/admin/metrics:
+    get:
+      summary: Get system metrics
+      description: Retrieve aggregated usage statistics (observability requirement)
+      operationId: getMetrics
+      tags: [Admin - Monitoring]
+      parameters:
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by tenant (null = all tenants)
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: System metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMetrics'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AgentConfig:
+      type: object
+      properties:
+        agent_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        prompt_template:
+          type: string
+        llm_model_id:
+          type: string
+          format: uuid
+        default_output_format_id:
+          type: string
+          format: uuid
+        description:
+          type: string
+        is_active:
+          type: boolean
+        tools:
+          type: array
+          items:
+            type: object
+            properties:
+              tool_id:
+                type: string
+                format: uuid
+              priority:
+                type: integer
+
+    CreateAgentRequest:
+      type: object
+      required: [name, prompt_template, llm_model_id]
+      properties:
+        name:
+          type: string
+        prompt_template:
+          type: string
+        llm_model_id:
+          type: string
+          format: uuid
+        tools:
+          type: array
+          items:
+            type: object
+            properties:
+              tool_id:
+                type: string
+                format: uuid
+              priority:
+                type: integer
+        default_output_format_id:
+          type: string
+          format: uuid
+
+    UpdateAgentRequest:
+      type: object
+      properties:
+        prompt_template:
+          type: string
+        tools:
+          type: array
+          items:
+            type: object
+            properties:
+              tool_id:
+                type: string
+                format: uuid
+              priority:
+                type: integer
+        llm_model_id:
+          type: string
+          format: uuid
+
+    ToolConfig:
+      type: object
+      properties:
+        tool_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        base_tool_id:
+          type: string
+          format: uuid
+        config:
+          type: object
+        input_schema:
+          type: object
+        output_format_id:
+          type: string
+          format: uuid
+
+    CreateToolRequest:
+      type: object
+      required: [name, base_tool_id, config, input_schema]
+      properties:
+        name:
+          type: string
+        base_tool_id:
+          type: string
+          format: uuid
+        config:
+          type: object
+        input_schema:
+          type: object
+        output_format_id:
+          type: string
+          format: uuid
+
+    TenantPermissions:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        agents:
+          type: array
+          items:
+            type: object
+            properties:
+              agent_id:
+                type: string
+                format: uuid
+              enabled:
+                type: boolean
+        tools:
+          type: array
+          items:
+            type: object
+            properties:
+              tool_id:
+                type: string
+                format: uuid
+              enabled:
+                type: boolean
+
+    SystemMetrics:
+      type: object
+      properties:
+        agent_calls_total:
+          type: integer
+        tool_calls_total:
+          type: integer
+        tool_avg_latency:
+          type: number
+        llm_cost_total:
+          type: number
+        tenant_usage:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              requests:
+                type: integer
+              cost:
+                type: number

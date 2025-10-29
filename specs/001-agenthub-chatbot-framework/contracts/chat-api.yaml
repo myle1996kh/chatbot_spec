@@ -1,0 +1,422 @@
+openapi: 3.1.0
+info:
+  title: AgentHub Chat API
+  description: Chat interaction endpoints for multi-agent conversational interface
+  version: 1.0.0
+  contact:
+    name: AgentHub API Support
+
+servers:
+  - url: https://api.agenthub.example.com
+    description: Production server
+  - url: http://localhost:8000
+    description: Development server
+
+security:
+  - BearerAuth: []
+
+paths:
+  /api/{tenant_id}/chat:
+    post:
+      summary: Send chat message
+      description: |
+        Send a user message to the AgentHub system. SupervisorAgent analyzes intent
+        and routes to appropriate domain agent (Debt, Shipment, OCR, Analysis).
+
+        User Story: US1 (Business User Queries Customer Debt)
+      operationId: sendChatMessage
+      tags:
+        - Chat
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tenant_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Tenant identifier (must match JWT tenant claim)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            examples:
+              debt_query:
+                summary: Customer debt query
+                value:
+                  message: "What is the debt status for customer MST 0123456789?"
+                  session_id: null
+              follow_up:
+                summary: Follow-up message in existing session
+                value:
+                  message: "What about their payment history?"
+                  session_id: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Successful response from agent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+              examples:
+                debt_response:
+                  summary: Structured debt data response
+                  value:
+                    status: "success"
+                    agent: "AgentDebt"
+                    intent: "get_customer_debt"
+                    data:
+                      customer_mst: "0123456789"
+                      customer_name: "Acme Corporation"
+                      total_debt: 125000000
+                      overdue_amount: 45000000
+                      currency: "VND"
+                      last_payment_date: "2025-09-15"
+                    format: "structured_json"
+                    renderer_hint:
+                      type: "table"
+                      fields: ["customer_name", "total_debt", "overdue_amount"]
+                    metadata:
+                      session_id: "550e8400-e29b-41d4-a716-446655440000"
+                      duration_ms: 1234
+                      token_count: 150
+                multi_intent_rejection:
+                  summary: Multi-intent query rejected (MVP behavior)
+                  value:
+                    status: "clarification_needed"
+                    agent: "SupervisorAgent"
+                    intent: "multi_intent_detected"
+                    data:
+                      message: "I detected multiple questions. Please ask about debt or shipment separately so I can help you better."
+                      detected_intents: ["customer_debt", "shipment_tracking"]
+                    format: "text"
+                    metadata:
+                      session_id: "550e8400-e29b-41d4-a716-446655440000"
+                      duration_ms: 450
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/{tenant_id}/session:
+    get:
+      summary: List user sessions
+      description: |
+        Retrieve list of conversation sessions for the current user.
+
+        User Story: US7 (Session Management)
+      operationId: listSessions
+      tags:
+        - Sessions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tenant_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SessionSummary'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/{tenant_id}/session/{session_id}:
+    get:
+      summary: Get session details
+      description: |
+        Retrieve full message history for a specific session.
+
+        User Story: US7 (Session Management)
+      operationId: getSessionDetails
+      tags:
+        - Sessions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tenant_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session details with full message history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Session not found
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token (RS256) with claims:
+        - sub: user_id
+        - tenant_id: tenant UUID
+        - email: user email
+        - roles: user roles array
+
+  schemas:
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: User message content
+        session_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Existing session ID for follow-up messages (null for new session)
+
+    ChatResponse:
+      type: object
+      required:
+        - status
+        - agent
+        - intent
+        - data
+        - format
+        - metadata
+      properties:
+        status:
+          type: string
+          enum: [success, error, clarification_needed]
+          description: Response status
+        agent:
+          type: string
+          description: Agent that processed the request (SupervisorAgent, AgentDebt, etc.)
+        intent:
+          type: string
+          description: Detected user intent
+        data:
+          type: object
+          description: Response data (structure varies by agent and intent)
+        format:
+          type: string
+          enum: [structured_json, markdown_table, chart_data, summary_text]
+          description: Output format type
+        renderer_hint:
+          type: object
+          description: UI rendering hints
+          properties:
+            type:
+              type: string
+              enum: [table, chart, text, json]
+            fields:
+              type: array
+              items:
+                type: string
+        metadata:
+          type: object
+          required:
+            - session_id
+            - duration_ms
+          properties:
+            session_id:
+              type: string
+              format: uuid
+            duration_ms:
+              type: integer
+              description: Processing duration in milliseconds
+            token_count:
+              type: integer
+              description: LLM tokens used
+            tool_calls:
+              type: array
+              items:
+                type: string
+              description: Tools invoked during processing
+
+    SessionSummary:
+      type: object
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        agent_id:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        last_message_at:
+          type: string
+          format: date-time
+        message_count:
+          type: integer
+
+    SessionDetail:
+      type: object
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+        agent_id:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        last_message_at:
+          type: string
+          format: date-time
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+
+    Message:
+      type: object
+      properties:
+        message_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [user, assistant, system]
+        content:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [error]
+        message:
+          type: string
+        detail:
+          type: string
+          nullable: true
+        code:
+          type: string
+          nullable: true
+
+  responses:
+    Unauthorized:
+      description: Authentication required or token invalid/expired
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: "error"
+            message: "Unauthorized"
+            detail: "JWT token expired or invalid"
+            code: "AUTH_001"
+
+    Forbidden:
+      description: Insufficient permissions or tenant mismatch
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: "error"
+            message: "Forbidden"
+            detail: "Tenant does not have access to this agent"
+            code: "AUTH_002"
+
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                enum: [error]
+              message:
+                type: string
+              errors:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field:
+                      type: string
+                    message:
+                      type: string
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: "error"
+            message: "Internal server error"
+            detail: "An unexpected error occurred. Please try again later."
+            code: "INTERNAL_001"
