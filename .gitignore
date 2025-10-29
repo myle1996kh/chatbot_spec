@@ -1,0 +1,99 @@
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs and temp
+*.log
+*.tmp
+*.temp
+*.pid
+*.seed
+*.out
+
+# Editor/IDE
+.vscode/
+.idea/
+.vs/
+*.code-workspace
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+.Python
+.venv/
+venv/
+env/
+ENV/
+pip-wheel-metadata/
+wheels/
+.eggs/
+*.egg-info/
+*.egg
+dist/
+build/
+develop-eggs/
+downloads/
+lib/
+lib64/
+parts/
+sdist/
+share/python-wheels/
+pyvenv.cfg
+MANIFEST
+
+# Testing and tooling
+.pytest_cache/
+.coverage
+.coverage.*
+.cache/
+nosetests.xml
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.pyre/
+.pytype/
+
+# Environments and secrets
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+.secrets/
+.secret/
+*.key
+*.pem
+
+# Databases and media
+*.sqlite3
+db.sqlite3
+media/
+uploads/
+
+# Docker
+.docker/
+docker-data/
+tmp/
+temp/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node (just in case)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS trash
+$RECYCLE.BIN/
+*.lnk
+
