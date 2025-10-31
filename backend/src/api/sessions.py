@@ -94,10 +94,10 @@ async def list_sessions(
                     session_id=session.session_id,
                     user_id=session.user_id,
                     created_at=session.created_at,
-                    updated_at=session.updated_at,
+                    last_message_at=session.last_message_at,
                     message_count=message_count,
                     last_message_preview=last_message_preview,
-                    metadata=session.metadata,
+                    metadata=session.session_metadata,
                 )
             )
 
@@ -187,12 +187,14 @@ async def get_session(
 
         return SessionDetail(
             session_id=session.session_id,
+            tenant_id=session.tenant_id,
             user_id=session.user_id,
+            agent_id=session.agent_id,
             thread_id=session.thread_id,
             created_at=session.created_at,
-            updated_at=session.updated_at,
+            last_message_at=session.last_message_at,
             messages=message_list,
-            metadata=session.metadata,
+            metadata=session.session_metadata,
         )
 
     except HTTPException:

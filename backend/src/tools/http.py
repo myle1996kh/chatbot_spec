@@ -3,6 +3,7 @@ import httpx
 from typing import Any, Dict, Optional
 from src.tools.base import BaseTool
 from src.utils.logging import get_logger
+from src.config import settings
 
 logger = get_logger(__name__)
 
@@ -30,27 +31,39 @@ class HTTPGetTool(BaseTool):
         Raises:
             httpx.HTTPError: If request fails
         """
+        base_url = self.config.get("base_url", "")
         endpoint = self.config.get("endpoint", "")
         headers = self.config.get("headers", {}).copy()
         timeout = self.config.get("timeout", 30)
 
         # Inject JWT token into Authorization header
-        if jwt_token:
+        # ⚠️ TESTING MODE: Use TEST_BEARER_TOKEN from env when DISABLE_AUTH=True
+        # TODO: REMOVE this logic before pushing to GitLab/production
+        if settings.DISABLE_AUTH and settings.TEST_BEARER_TOKEN:
+            headers["Authorization"] = f"Bearer {settings.TEST_BEARER_TOKEN}"
+            logger.warning(
+                "http_using_test_token",
+                reason="DISABLE_AUTH=True, using TEST_BEARER_TOKEN for external API"
+            )
+        elif jwt_token:
             headers["Authorization"] = f"Bearer {jwt_token}"
 
         # Replace path parameters in endpoint
         formatted_endpoint = endpoint.format(**params)
 
+        # Combine base_url with formatted endpoint
+        full_url = base_url + formatted_endpoint if base_url else formatted_endpoint
+
         logger.info(
             "http_get_request",
-            endpoint=formatted_endpoint,
+            full_url=full_url,
             tenant_id=tenant_id,
             has_jwt=bool(jwt_token)
         )
 
         try:
             async with httpx.AsyncClient(timeout=timeout) as client:
-                response = await client.get(formatted_endpoint, headers=headers)
+                response = await client.get(full_url, headers=headers)
                 response.raise_for_status()
 
                 logger.info(
@@ -112,7 +125,15 @@ class HTTPPostTool(BaseTool):
         timeout = self.config.get("timeout", 30)
 
         # Inject JWT token into Authorization header
-        if jwt_token:
+        # ⚠️ TESTING MODE: Use TEST_BEARER_TOKEN from env when DISABLE_AUTH=True
+        # TODO: REMOVE this logic before pushing to GitLab/production
+        if settings.DISABLE_AUTH and settings.TEST_BEARER_TOKEN:
+            headers["Authorization"] = f"Bearer {settings.TEST_BEARER_TOKEN}"
+            logger.warning(
+                "http_using_test_token",
+                reason="DISABLE_AUTH=True, using TEST_BEARER_TOKEN for external API"
+            )
+        elif jwt_token:
             headers["Authorization"] = f"Bearer {jwt_token}"
 
         # Set content type if not specified

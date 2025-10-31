@@ -87,7 +87,7 @@ async def list_agents(
                     created_at=agent.created_at,
                     updated_at=agent.updated_at,
                     tools=tools_data,
-                    metadata=agent.metadata or {},
+                    metadata={},  # AgentConfig doesn't have metadata column
                 )
             )
 
@@ -143,7 +143,7 @@ async def create_agent(
             prompt_template=request.prompt_template,
             llm_model_id=uuid.UUID(request.llm_model_id),
             is_active=request.is_active,
-            metadata=request.metadata,
+            # Note: AgentConfig doesn't have metadata column
         )
 
         db.add(agent)
@@ -194,7 +194,7 @@ async def create_agent(
             created_at=agent.created_at,
             updated_at=agent.updated_at,
             tools=tools_data,
-            metadata=agent.metadata or {},
+            metadata={},  # AgentConfig doesn't have metadata column
         )
 
     except HTTPException:
@@ -252,7 +252,7 @@ async def get_agent(
             created_at=agent.created_at,
             updated_at=agent.updated_at,
             tools=tools_data,
-            metadata=agent.metadata or {},
+            metadata={},  # AgentConfig doesn't have metadata column
         )
 
     except HTTPException:
@@ -299,8 +299,7 @@ async def update_agent(
             agent.llm_model_id = uuid.UUID(request.llm_model_id)
         if request.is_active is not None:
             agent.is_active = request.is_active
-        if request.metadata is not None:
-            agent.metadata = request.metadata
+        # Note: AgentConfig doesn't have metadata column, ignoring metadata updates
 
         # Update tool associations if provided
         if request.tool_ids is not None:
@@ -362,7 +361,7 @@ async def update_agent(
             created_at=agent.created_at,
             updated_at=agent.updated_at,
             tools=tools_data,
-            metadata=agent.metadata or {},
+            metadata={},  # AgentConfig doesn't have metadata column
         )
 
     except HTTPException:

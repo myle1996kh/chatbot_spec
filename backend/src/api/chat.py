@@ -2,7 +2,7 @@
 import time
 import uuid
 from typing import Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Body
 from sqlalchemy.orm import Session
 from src.config import get_db, settings
 from typing import Optional
@@ -22,9 +22,13 @@ router = APIRouter(prefix="/api", tags=["chat"])
 @router.post("/{tenant_id}/chat", response_model=ChatResponse)
 async def chat_endpoint(
     tenant_id: str = Path(..., description="Tenant UUID"),
-    request: ChatRequest = ...,
+    request: ChatRequest = Body(...),
     db: Session = Depends(get_db),
-    current_tenant: Optional[str] = Depends(get_current_tenant) if not settings.DISABLE_AUTH else None,
+    # Always depend on get_current_tenant so the dependency can decide
+    # at runtime whether to bypass auth (based on settings.DISABLE_AUTH).
+    # Avoid evaluating settings.DISABLE_AUTH at import time which can
+    # cause unexpected behavior if env vars are loaded later.
+    current_tenant: Optional[str] = Depends(get_current_tenant),
 ) -> ChatResponse:
     """
     Process user message and return agent response.
@@ -88,17 +92,24 @@ async def chat_endpoint(
 
         agent_response = await supervisor.route_message(request.message)
 
-        # Save assistant response
+        # Save assistant response with full metadata
         assistant_message = Message(
             message_id=str(uuid.uuid4()),
             session_id=session.session_id,
             role="assistant",
             content=str(agent_response.get("data", {})),
-            metadata={
+            message_metadata={
                 "agent": agent_response.get("agent"),
                 "intent": agent_response.get("intent"),
                 "format": agent_response.get("format"),
                 "renderer_hint": agent_response.get("renderer_hint"),
+                # Add full metadata from agent response
+                "llm_model": agent_response.get("metadata", {}).get("llm_model"),
+                "tool_calls": agent_response.get("metadata", {}).get("tool_calls"),
+                "extracted_entities": agent_response.get("metadata", {}).get("extracted_entities"),
+                "agent_id": agent_response.get("metadata", {}).get("agent_id"),
+                "tenant_id": agent_response.get("metadata", {}).get("tenant_id"),
+                "status": agent_response.get("status"),
             },
         )
         db.add(assistant_message)
@@ -132,31 +143,43 @@ async def chat_endpoint(
                 threshold_ms=2500,
             )
 
+        # Build response metadata from agent response
+        agent_metadata = agent_response.get("metadata", {})
+        response_metadata = {
+            "agent_id": agent_metadata.get("agent_id", "unknown"),
+            "tenant_id": tenant_id,
+            "duration_ms": duration_ms,
+            "status": agent_response.get("status", "success"),
+            "llm_model": agent_metadata.get("llm_model"),
+            "tool_calls": agent_metadata.get("tool_calls", []),
+            "extracted_entities": agent_metadata.get("extracted_entities", {}),
+        }
+
         return ChatResponse(
-            session_id=session.session_id,
-            message_id=assistant_message.message_id,
+            session_id=str(session.session_id),
+            message_id=str(assistant_message.message_id),
             response=agent_response.get("data", {}),
             agent=agent_response.get("agent", "unknown"),
             intent=agent_response.get("intent", "unknown"),
             format=agent_response.get("format", "text"),
             renderer_hint=agent_response.get("renderer_hint", {}),
-            metadata={
-                "duration_ms": duration_ms,
-                "status": agent_response.get("status", "success"),
-                **agent_response.get("metadata", {}),
-            },
+            metadata=response_metadata,
         )
 
     except HTTPException:
         raise
     except Exception as e:
         duration_ms = (time.time() - start_time) * 1000
+        import traceback
+        error_traceback = traceback.format_exc()
         logger.error(
             "chat_endpoint_error",
             tenant_id=tenant_id,
             error=str(e),
+            traceback=error_traceback,
             duration_ms=duration_ms,
         )
+        print(f"\n{'='*80}\nCHAT ENDPOINT ERROR:\n{'='*80}\n{error_traceback}\n{'='*80}\n")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
@@ -220,7 +243,7 @@ async def _get_or_create_session(
 @router.post("/{tenant_id}/test/chat", response_model=ChatResponse)
 async def test_chat_endpoint(
     tenant_id: str = Path(..., description="Tenant UUID"),
-    request: ChatRequest = ...,
+    request: ChatRequest = Body(...),
     db: Session = Depends(get_db),
 ) -> ChatResponse:
     """
@@ -272,17 +295,24 @@ async def test_chat_endpoint(
 
         agent_response = await supervisor.route_message(request.message)
 
-        # Save assistant response
+        # Save assistant response with full metadata
         assistant_message = Message(
             message_id=str(uuid.uuid4()),
             session_id=session.session_id,
             role="assistant",
             content=str(agent_response.get("data", {})),
-            metadata={
+            message_metadata={
                 "agent": agent_response.get("agent"),
                 "intent": agent_response.get("intent"),
                 "format": agent_response.get("format"),
                 "renderer_hint": agent_response.get("renderer_hint"),
+                # Add full metadata from agent response
+                "llm_model": agent_response.get("metadata", {}).get("llm_model"),
+                "tool_calls": agent_response.get("metadata", {}).get("tool_calls"),
+                "extracted_entities": agent_response.get("metadata", {}).get("extracted_entities"),
+                "agent_id": agent_response.get("metadata", {}).get("agent_id"),
+                "tenant_id": agent_response.get("metadata", {}).get("tenant_id"),
+                "status": agent_response.get("status"),
             },
         )
         db.add(assistant_message)
@@ -306,29 +336,41 @@ async def test_chat_endpoint(
             status="success",
         )
 
+        # Build response metadata from agent response
+        agent_metadata = agent_response.get("metadata", {})
+        response_metadata = {
+            "agent_id": agent_metadata.get("agent_id", "unknown"),
+            "tenant_id": tenant_id,
+            "duration_ms": duration_ms,
+            "status": agent_response.get("status", "success"),
+            "llm_model": agent_metadata.get("llm_model"),
+            "tool_calls": agent_metadata.get("tool_calls", []),
+            "extracted_entities": agent_metadata.get("extracted_entities", {}),
+        }
+
         return ChatResponse(
-            session_id=session.session_id,
-            message_id=assistant_message.message_id,
+            session_id=str(session.session_id),
+            message_id=str(assistant_message.message_id),
             response=agent_response.get("data", {}),
             agent=agent_response.get("agent", "unknown"),
             intent=agent_response.get("intent", "unknown"),
             format=agent_response.get("format", "text"),
             renderer_hint=agent_response.get("renderer_hint", {}),
-            metadata={
-                "duration_ms": duration_ms,
-                "status": agent_response.get("status", "success"),
-                **agent_response.get("metadata", {}),
-            },
+            metadata=response_metadata,
         )
 
     except HTTPException:
         raise
     except Exception as e:
         duration_ms = (time.time() - start_time) * 1000
+        import traceback
+        error_traceback = traceback.format_exc()
         logger.error(
             "test_chat_endpoint_error",
             tenant_id=tenant_id,
             error=str(e),
+            traceback=error_traceback,
             duration_ms=duration_ms,
         )
+        print(f"\n{'='*80}\nTEST CHAT ENDPOINT ERROR:\n{'='*80}\n{error_traceback}\n{'='*80}\n")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")

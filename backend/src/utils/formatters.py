@@ -172,7 +172,10 @@ def format_error_response(
 
 def format_clarification_response(
     detected_intents: list,
-    message: str = None
+    message: str = None,
+    llm_model_info: Dict[str, Any] = None,
+    agent_id: str = None,
+    tenant_id: str = None
 ) -> Dict[str, Any]:
     """
     Format multi-intent clarification response.
@@ -180,6 +183,9 @@ def format_clarification_response(
     Args:
         detected_intents: List of detected intents
         message: Clarification message
+        llm_model_info: LLM model information
+        agent_id: Agent ID that generated the response
+        tenant_id: Tenant ID
 
     Returns:
         Clarification response dictionary
@@ -188,6 +194,14 @@ def format_clarification_response(
         "I detected multiple questions. Please ask about one topic at a time "
         "so I can help you better."
     )
+
+    metadata = {}
+    if agent_id:
+        metadata["agent_id"] = agent_id
+    if tenant_id:
+        metadata["tenant_id"] = tenant_id
+    if llm_model_info:
+        metadata["llm_model"] = llm_model_info
 
     return {
         "status": "clarification_needed",
@@ -199,5 +213,5 @@ def format_clarification_response(
         },
         "format": "text",
         "renderer_hint": {"type": "text"},
-        "metadata": {}
+        "metadata": metadata
     }

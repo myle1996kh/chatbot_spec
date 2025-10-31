@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     # intended for local testing only.
     DISABLE_AUTH: bool = Field(default=False)
 
+    # Test Bearer Token for External API Calls
+    # Used when DISABLE_AUTH=true for HTTP tool requests to external APIs
+    TEST_BEARER_TOKEN: str = Field(default="")
+
     # CORS Settings
     CORS_ORIGINS: str = Field(default="http://localhost:3000,http://localhost:8080")
 

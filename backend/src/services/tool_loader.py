@@ -99,6 +99,11 @@ class ToolRegistry:
             # Standard tool instantiation for HTTP tools
             tool_instance = handler_class(tool_config.config)
 
+            # Extract data from SQLAlchemy objects BEFORE creating closure
+            # This prevents "not bound to a Session" errors
+            tool_name = tool_config.name
+            tool_description = tool_config.description or f"Tool: {tool_config.name}"
+
             async def tool_executor(**kwargs) -> str:
                 """Execute tool with injected context."""
                 try:
@@ -111,7 +116,7 @@ class ToolRegistry:
 
                     logger.info(
                         "tool_executed",
-                        tool_name=tool_config.name,
+                        tool_name=tool_name,
                         tenant_id=tenant_id
                     )
 
@@ -119,7 +124,7 @@ class ToolRegistry:
                 except Exception as e:
                     logger.error(
                         "tool_execution_error",
-                        tool_name=tool_config.name,
+                        tool_name=tool_name,
                         tenant_id=tenant_id,
                         error=str(e)
                     )
@@ -128,8 +133,8 @@ class ToolRegistry:
             # Create StructuredTool
             structured_tool = StructuredTool.from_function(
                 func=tool_executor,
-                name=tool_config.name,
-                description=tool_config.description or f"Tool: {tool_config.name}",
+                name=tool_name,
+                description=tool_description,
                 args_schema=pydantic_schema,
                 coroutine=tool_executor  # For async execution
             )
@@ -214,6 +219,8 @@ class ToolRegistry:
         """
         # Query agent_tools with priority filtering
         from src.models.agent import AgentTools
+        from src.models.permissions import TenantToolPermission
+        import uuid
 
         agent_tools = db.query(AgentTools).filter(
             AgentTools.agent_id == agent_id
@@ -222,6 +229,23 @@ class ToolRegistry:
         tools = []
         for agent_tool in agent_tools:
             try:
+                # Check tenant has permission to use this tool
+                tool_permission = db.query(TenantToolPermission).filter(
+                    TenantToolPermission.tenant_id == uuid.UUID(tenant_id),
+                    TenantToolPermission.tool_id == agent_tool.tool_id,
+                    TenantToolPermission.enabled == True
+                ).first()
+
+                if not tool_permission:
+                    logger.warning(
+                        "tool_access_denied",
+                        tool_id=agent_tool.tool_id,
+                        agent_id=agent_id,
+                        tenant_id=tenant_id,
+                        reason="tenant_not_permitted"
+                    )
+                    continue
+
                 tool = self.create_tool_from_db(
                     db,
                     str(agent_tool.tool_id),

@@ -125,7 +125,7 @@ class LLMManager:
             return ChatOpenAI(
                 model=model_name,
                 openai_api_key=api_key,
-                temperature=0.7,
+                temperature=0.0,
                 max_tokens=4096
             )
 
@@ -134,7 +134,7 @@ class LLMManager:
             return ChatGoogleGenerativeAI(
                 model=model_name,
                 google_api_key=api_key,
-                temperature=0.7,
+                temperature=0.0,
                 max_output_tokens=4096
             )
 
@@ -143,7 +143,7 @@ class LLMManager:
             return ChatAnthropic(
                 model=model_name,
                 anthropic_api_key=api_key,
-                temperature=0.7,
+                temperature=0.0,
                 max_tokens=4096
             )
 

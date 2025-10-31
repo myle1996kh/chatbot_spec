@@ -19,6 +19,7 @@ class AgentConfig(Base):
     llm_model_id = Column(UUID(as_uuid=True), ForeignKey("llm_models.llm_model_id"), nullable=False)
     default_output_format_id = Column(UUID(as_uuid=True), ForeignKey("output_formats.format_id"))
     description = Column(Text)  # Agent description
+    handler_class = Column(String(255), nullable=True, default="services.domain_agents.DomainAgent")  # Python class path for custom logic
     is_active = Column(Boolean, nullable=False, default=True)  # Agent availability
     created_at = Column(TIMESTAMP, nullable=False, default=datetime.utcnow)
     updated_at = Column(

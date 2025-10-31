@@ -4,6 +4,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.config import settings
 from src.utils.logging import configure_logging, get_logger
 
+# Import ALL models to ensure SQLAlchemy relationships are properly registered
+# This must be done before any database operations
+# These imports appear "unused" but are required for SQLAlchemy relationship resolution
+from src.models.tenant import Tenant  # noqa: F401
+from src.models.session import ChatSession  # noqa: F401
+from src.models.message import Message  # noqa: F401
+from src.models.llm_model import LLMModel  # noqa: F401
+from src.models.tenant_llm_config import TenantLLMConfig  # noqa: F401
+from src.models.base_tool import BaseTool  # noqa: F401
+from src.models.output_format import OutputFormat  # noqa: F401
+from src.models.tool import ToolConfig  # noqa: F401
+from src.models.agent import AgentConfig, AgentTools  # noqa: F401
+from src.models.permissions import TenantAgentPermission, TenantToolPermission  # noqa: F401
+
 # Configure logging
 configure_logging()
 logger = get_logger(__name__)
